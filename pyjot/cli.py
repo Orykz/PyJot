@@ -1,9 +1,9 @@
 import typer
 
-from typing import Optional
+from typing import Optional, List
 from pathlib import Path
 
-from pyjot import __app_name__, __version__, ERRORS, config, database
+from pyjot import __app_name__, __version__, ERRORS, config, database, pyjot
 
 app = typer.Typer()
 
@@ -32,6 +32,43 @@ def init(
         raise typer.Exit(1)
     else:
         typer.secho(f"The database is located on {db_path}", fg=typer.colors.GREEN)
+
+
+@app.command()
+def add(
+    task: List[str] = typer.Argument(...),
+    priority: int = typer.Option(2, "--priority", "-p", min=1, max=4),
+) -> None:
+    todoer = _get_todoer()
+    todo, error = todoer.add(task, priority)
+    if error:
+        typer.secho(f"Adding task failed: {ERRORS[error]}", fg=typer.colors.RED)
+        raise typer.Exit(1)
+    else:
+        typer.secho(
+            f"task added: '{todo['Description']}' (priority: {priority})",
+            fg=typer.colors.GREEN,
+        )
+
+
+def _get_todoer() -> pyjot.Todoer:
+    if config.CONFIG_FILE_PATH.exists():
+        db_path = database.get_database_path(config.CONFIG_FILE_PATH)
+    else:
+        typer.secho(
+            'Config file not found. Please run "pyjot init"',
+            fg=typer.colors.RED,
+        )
+        raise typer.Exit(1)
+
+    if db_path.exists():
+        return pyjot.Todoer(db_path)
+    else:
+        typer.secho(
+            'Database not found. Please run "pyjot init"',
+            fg=typer.colors.RED,
+        )
+        raise typer.Exit(1)
 
 
 def _version_callback(value: bool) -> None:
