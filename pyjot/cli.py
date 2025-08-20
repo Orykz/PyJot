@@ -3,7 +3,7 @@ from rich import box
 from rich.console import Console
 from rich.table import Table
 
-from typing import Optional, List
+from typing import Optional, List, Dict
 from pathlib import Path
 
 from pyjot import __app_name__, __version__, ERRORS, config, database, pyjot
@@ -11,12 +11,16 @@ from pyjot import __app_name__, __version__, ERRORS, config, database, pyjot
 app = typer.Typer()
 console = Console()
 
+_COLORS: Dict[str, str] = {
+    "active": "#00D9FF",
+    "inactive": "#006475",
+}
 
-ACTIVE_COLOR = "#00D9FF"
-INACTIVE_COLOR = "#006475"
-ERROR_ALERT = "bold #FF5959"
-SUCCESS_ALERT = "italic #59FF5F"
-WARNING_ALERT = "italic #F9FF85"
+_ALERTS: Dict[str, str] = {
+    "success": "italic #59FF5F",
+    "warning": "italic #F9FF85",
+    "error": "bold #FF5959",
+}
 
 
 @app.command()
@@ -30,26 +34,23 @@ def init(
 ) -> None:
     app_init_error = config.init_app(db_path)
     if app_init_error:
-        console.print(
+        _print_console(
             f"Cannot create config file: {ERRORS[app_init_error]}",
-            style=ERROR_ALERT,
-            highlight=False,
+            _ALERTS["error"],
         )
         raise typer.Exit(1)
 
     db_init_error = database.init_database(Path(db_path))
     if db_init_error:
-        console.print(
+        _print_console(
             f"Cannot create database: {ERRORS[db_init_error]}",
-            style=ERROR_ALERT,
-            highlight=False,
+            _ALERTS["error"],
         )
         raise typer.Exit(1)
     else:
-        console.print(
+        _print_console(
             f"The database is located on {db_path}",
-            style=SUCCESS_ALERT,
-            highlight=False,
+            _ALERTS["success"],
         )
 
 
@@ -61,17 +62,15 @@ def add(
     todoer = _get_todoer()
     todo, error = todoer.add(task, priority)
     if error:
-        console.print(
+        _print_console(
             f"Adding task failed: {ERRORS[error]}",
-            style=ERROR_ALERT,
-            highlight=False,
+            _ALERTS["error"],
         )
         raise typer.Exit(1)
     else:
-        console.print(
+        _print_console(
             f"task added: '{todo['Task']}' (priority: {priority})",
-            style=SUCCESS_ALERT,
-            highlight=False,
+            _ALERTS["success"],
         )
 
 
@@ -80,18 +79,17 @@ def list_all() -> None:
     todoer = _get_todoer()
     todo_list = todoer.get_todo_list()
     if not todo_list:
-        console.print(
+        _print_console(
             "No existing tasks. Use the command '[italic]pyjot add <task>[/italic]'",
-            style=ERROR_ALERT,
-            highlight=False,
+            _ALERTS["error"],
         )
         raise typer.Exit()
 
     table = Table(
         title="To-Do List",
-        border_style=INACTIVE_COLOR,
-        title_style=f"bold italic {ACTIVE_COLOR}",
-        header_style=f"bold {ACTIVE_COLOR}",
+        border_style=_COLORS["inactive"],
+        title_style=f"bold italic {_COLORS['active']}",
+        header_style=f"bold {_COLORS['active']}",
         box=box.ASCII,
     )
     table.add_column("ID")
@@ -100,7 +98,7 @@ def list_all() -> None:
     table.add_column("Task")
     for id, todo in enumerate(todo_list, start=1):
         task, prio, complete = todo.values()
-        text_color = INACTIVE_COLOR if complete else ACTIVE_COLOR
+        text_color = _COLORS["inactive"] if complete else _COLORS["active"]
         table.add_row(str(id), str(prio), str(complete), task, style=text_color)
 
     console.print(table)
@@ -112,17 +110,15 @@ def set_complete(todo_id: int = typer.Argument(...)) -> None:
     todo, error = todoer.set_complete(todo_id)
 
     if error:
-        console.print(
-            f"Cannot switch completion for task #{todo_id}: {ERRORS[error]}",
-            style=ERROR_ALERT,
-            highlight=False,
+        _print_console(
+            f"Failed to switch completion for task #{todo_id}: {ERRORS[error]}",
+            _ALERTS["error"],
         )
         raise typer.Exit(1)
 
-    console.print(
-        f"Task #{todo_id} completion has been switched to [bold]{todo['Complete']}[/bold]",
-        style=SUCCESS_ALERT,
-        highlight=False,
+    _print_console(
+        f"Task #{todo_id} completion was switched to [bold]{todo['Complete']}[/bold]",
+        _ALERTS["success"],
     )
 
 
@@ -141,17 +137,11 @@ def remove(
     def _remove():
         todo, error = todoer.remove(todo_id)
         if error:
-            console.print(
-                f"Removing task failed: {ERRORS[error]}",
-                style=ERROR_ALERT,
-                highlight=False,
-            )
+            _print_console(f"Removing task failed: {ERRORS[error]}", _ALERTS["error"])
             raise typer.Exit(1)
         else:
-            console.print(
-                f"Task #{todo_id}: {todo['Task']} was removed",
-                style=SUCCESS_ALERT,
-                highlight=False,
+            _print_console(
+                f"Task #{todo_id}: {todo['Task']} was removed", _ALERTS["success"]
             )
 
     if force:
@@ -162,22 +152,14 @@ def remove(
         try:
             todo = todo_list[todo_id - 1]
         except IndexError:
-            console.print(
-                f"Task #{todo_id} is invalid",
-                style=ERROR_ALERT,
-                highlight=False,
-            )
+            _print_console(f"Task #{todo_id} is invalid", _ALERTS["error"])
             raise typer.Exit(1)
 
         delete = typer.confirm(f"Delete task #{todo_id}: {todo['Task']}?")
         if delete:
             _remove()
         else:
-            console.print(
-                "Operation was canceled",
-                style=WARNING_ALERT,
-                highlight=False,
-            )
+            _print_console("Operation was canceled", _ALERTS["warning"])
 
 
 @app.command(name="clear")
@@ -193,24 +175,16 @@ def remove_all(
     if force:
         error = todoer.remove_all().error
         if error:
-            console.print(
-                f"Removing tasks failed: {ERRORS[error]}",
-                style=ERROR_ALERT,
-                highlight=False,
-            )
+            _print_console(f"Removing tasks failed: {ERRORS[error]}", _ALERTS["error"])
             raise typer.Exit(1)
         else:
-            console.print(
-                "All tasks were removed",
-                style=SUCCESS_ALERT,
-                highlight=False,
-            )
+            _print_console("All tasks were removed", _ALERTS["success"])
     else:
-        console.print(
-            "Operation was canceled",
-            style=WARNING_ALERT,
-            highlight=False,
-        )
+        _print_console("Operation was canceled", _ALERTS["warning"])
+
+
+def _print_console(text: str, alert: str):
+    console.print(text, style=alert, highlight=False)
 
 
 def _get_todoer() -> pyjot.Todoer:
@@ -219,7 +193,7 @@ def _get_todoer() -> pyjot.Todoer:
     else:
         console.print(
             "Config file not found. Please run '[italic]pyjot init[/italic]'",
-            style=ERROR_ALERT,
+            style=_ALERTS["error"],
         )
         raise typer.Exit(1)
 
@@ -228,7 +202,7 @@ def _get_todoer() -> pyjot.Todoer:
     else:
         console.print(
             "Database not found. Please run '[italic]pyjot init[/italic]'",
-            style=ERROR_ALERT,
+            style=_ALERTS["error"],
         )
         raise typer.Exit(1)
 
