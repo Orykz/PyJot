@@ -19,5 +19,6 @@ ERRORS = {
     DB_READ_ERROR: "error on reading the database",
     DB_WRITE_ERROR: "error on writing to the database",
     DB_EXISTS_ERROR: "database already exists",
-    ID_ERROR: "to-do ID not found",
+    JSON_ERROR: "error on accessing the database",
+    ID_ERROR: "task ID not found",
 }
