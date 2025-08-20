@@ -1,5 +1,7 @@
 from typing import Dict, Any, NamedTuple, List
 from pathlib import Path
+
+from pyjot import ID_ERROR
 from pyjot.database import DatabaseHandler
 
 
@@ -30,3 +32,17 @@ class Todoer:
     def get_todo_list(self) -> List[Dict[str, Any]]:
         read = self._db_handler.read_todos()
         return read.todo_list
+
+    def set_complete(self, todo_id: int) -> TodoResult:
+        read = self._db_handler.read_todos()
+        if read.error:
+            return TodoResult({}, read.error)
+
+        try:
+            todo = read.todo_list[todo_id - 1]
+        except IndexError:
+            return TodoResult({}, ID_ERROR)
+
+        todo["Complete"] = not todo["Complete"]
+        write = self._db_handler.write_todos(read.todo_list)
+        return TodoResult(todo, write.error)

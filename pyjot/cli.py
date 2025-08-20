@@ -105,6 +105,26 @@ def list_all() -> None:
     console.print(table)
 
 
+@app.command(name="complete")
+def set_complete(todo_id: int = typer.Argument(...)) -> None:
+    todoer = _get_todoer()
+    todo, error = todoer.set_complete(todo_id)
+
+    if error:
+        console.print(
+            f"Cannot switch completion for task #{todo_id}: {ERRORS[error]}",
+            style=ERROR_ALERT,
+            highlight=False,
+        )
+        raise typer.Exit(1)
+
+    console.print(
+        f"Task #{todo_id} completion has been switched to [bold]{todo['Complete']}[/bold]",
+        style=SUCCESS_ALERT,
+        highlight=False,
+    )
+
+
 def _get_todoer() -> pyjot.Todoer:
     if config.CONFIG_FILE_PATH.exists():
         db_path = database.get_database_path(config.CONFIG_FILE_PATH)
