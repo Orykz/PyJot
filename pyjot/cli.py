@@ -16,6 +16,7 @@ ACTIVE_COLOR = "#00D9FF"
 INACTIVE_COLOR = "#006475"
 ERROR_ALERT = "bold #FF5959"
 SUCCESS_ALERT = "italic #59FF5F"
+WARNING_ALERT = "italic #F9FF85"
 
 
 @app.command()
@@ -123,6 +124,93 @@ def set_complete(todo_id: int = typer.Argument(...)) -> None:
         style=SUCCESS_ALERT,
         highlight=False,
     )
+
+
+@app.command()
+def remove(
+    todo_id: int = typer.Argument(...),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        "-f",
+        help="Force the deletion of task without confirming.",
+    ),
+) -> None:
+    todoer = _get_todoer()
+
+    def _remove():
+        todo, error = todoer.remove(todo_id)
+        if error:
+            console.print(
+                f"Removing task failed: {ERRORS[error]}",
+                style=ERROR_ALERT,
+                highlight=False,
+            )
+            raise typer.Exit(1)
+        else:
+            console.print(
+                f"Task #{todo_id}: {todo['Task']} was removed",
+                style=SUCCESS_ALERT,
+                highlight=False,
+            )
+
+    if force:
+        _remove()
+    else:
+        todo_list = todoer.get_todo_list()
+
+        try:
+            todo = todo_list[todo_id - 1]
+        except IndexError:
+            console.print(
+                f"Task #{todo_id} is invalid",
+                style=ERROR_ALERT,
+                highlight=False,
+            )
+            raise typer.Exit(1)
+
+        delete = typer.confirm(f"Delete task #{todo_id}: {todo['Task']}?")
+        if delete:
+            _remove()
+        else:
+            console.print(
+                "Operation was canceled",
+                style=WARNING_ALERT,
+                highlight=False,
+            )
+
+
+@app.command(name="clear")
+def remove_all(
+    force: bool = typer.Option(
+        ...,
+        prompt="Delete all tasks?",
+        help="Force the deletion of tasks without confirming.",
+    ),
+) -> None:
+    todoer = _get_todoer()
+
+    if force:
+        error = todoer.remove_all().error
+        if error:
+            console.print(
+                f"Removing tasks failed: {ERRORS[error]}",
+                style=ERROR_ALERT,
+                highlight=False,
+            )
+            raise typer.Exit(1)
+        else:
+            console.print(
+                "All tasks were removed",
+                style=SUCCESS_ALERT,
+                highlight=False,
+            )
+    else:
+        console.print(
+            "Operation was canceled",
+            style=WARNING_ALERT,
+            highlight=False,
+        )
 
 
 def _get_todoer() -> pyjot.Todoer:

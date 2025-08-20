@@ -46,3 +46,20 @@ class Todoer:
         todo["Complete"] = not todo["Complete"]
         write = self._db_handler.write_todos(read.todo_list)
         return TodoResult(todo, write.error)
+
+    def remove(self, todo_id: int) -> TodoResult:
+        read = self._db_handler.read_todos()
+        if read.error:
+            return TodoResult({}, read.error)
+
+        try:
+            todo = read.todo_list.pop(todo_id - 1)
+        except IndexError:
+            return TodoResult({}, ID_ERROR)
+
+        write = self._db_handler.write_todos(read.todo_list)
+        return TodoResult(todo, write.error)
+
+    def remove_all(self) -> TodoResult:
+        write = self._db_handler.write_todos([])
+        return TodoResult({}, write.error)
