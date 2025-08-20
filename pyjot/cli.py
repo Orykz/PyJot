@@ -183,28 +183,28 @@ def remove_all(
         _print_console("Operation was canceled", _ALERTS["warning"])
 
 
-def _print_console(text: str, alert: str):
-    console.print(text, style=alert, highlight=False)
-
-
 def _get_todoer() -> pyjot.Todoer:
     if config.CONFIG_FILE_PATH.exists():
         db_path = database.get_database_path(config.CONFIG_FILE_PATH)
     else:
-        console.print(
+        _print_console(
             "Config file not found. Please run '[italic]pyjot init[/italic]'",
-            style=_ALERTS["error"],
+            _ALERTS["error"],
         )
         raise typer.Exit(1)
 
     if db_path.exists():
         return pyjot.Todoer(db_path)
     else:
-        console.print(
+        _print_console(
             "Database not found. Please run '[italic]pyjot init[/italic]'",
-            style=_ALERTS["error"],
+            _ALERTS["error"],
         )
         raise typer.Exit(1)
+
+
+def _print_console(text: str, alert: str):
+    console.print(text, style=alert, highlight=False)
 
 
 def _version_callback(value: bool) -> None:
