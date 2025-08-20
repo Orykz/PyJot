@@ -3,7 +3,7 @@ from pathlib import Path
 from pyjot.database import DatabaseHandler
 
 
-class CurrentTodo(NamedTuple):
+class TodoResult(NamedTuple):
     todo: Dict[str, Any]
     error: int
 
@@ -12,7 +12,7 @@ class Todoer:
     def __init__(self, db_path: Path) -> None:
         self._db_handler = DatabaseHandler(db_path)
 
-    def add(self, task: List[str], priority: int = 2) -> CurrentTodo:
+    def add(self, task: List[str], priority: int = 2) -> TodoResult:
         task_text = " ".join(task)
         todo = {
             "Task": task_text,
@@ -21,8 +21,12 @@ class Todoer:
         }
         read = self._db_handler.read_todos()
         if read.error:
-            return CurrentTodo(todo, read.error)
+            return TodoResult(todo, read.error)
 
         read.todo_list.append(todo)
         write = self._db_handler.write_todos(read.todo_list)
-        return CurrentTodo(todo, write.error)
+        return TodoResult(todo, write.error)
+
+    def get_todo_list(self) -> List[Dict[str, Any]]:
+        read = self._db_handler.read_todos()
+        return read.todo_list
