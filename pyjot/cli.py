@@ -8,7 +8,7 @@ from pathlib import Path
 
 from pyjot import __app_name__, __version__, ERRORS, config, database, pyjot
 
-app = typer.Typer()
+app = typer.Typer(add_completion=False, help="An awesome CLI to-do list application.")
 console = Console()
 
 _COLORS: Dict[str, str] = {
@@ -32,6 +32,10 @@ def init(
         prompt="select location to create database. default: ",
     ),
 ) -> None:
+    """
+    Initialize the to-do application.
+    Run this command first before running other commands.
+    """
     app_init_error = config.init_app(db_path)
     if app_init_error:
         _print_console(
@@ -56,9 +60,19 @@ def init(
 
 @app.command()
 def add(
-    task: List[str] = typer.Argument(...),
-    priority: int = typer.Option(2, "--priority", "-p", min=1, max=4),
+    task: List[str] = typer.Argument(..., help="Write your to-do task."),
+    priority: int = typer.Option(
+        2,
+        "--priority",
+        "-p",
+        min=1,
+        max=4,
+        help="Sets the priority value of your to-do task.",
+    ),
 ) -> None:
+    """
+    Add a task to your to-do list.
+    """
     todoer = _get_todoer()
     todo, error = todoer.add(task, priority)
     if error:
@@ -76,6 +90,9 @@ def add(
 
 @app.command(name="list")
 def list_all() -> None:
+    """
+    List all of your to-dos in a pretty looking table.
+    """
     todoer = _get_todoer()
     todo_list = todoer.get_todo_list()
     if not todo_list:
@@ -105,7 +122,12 @@ def list_all() -> None:
 
 
 @app.command(name="complete")
-def set_complete(todo_id: int = typer.Argument(...)) -> None:
+def set_complete(
+    todo_id: int = typer.Argument(..., help="The id of your to-do task."),
+) -> None:
+    """
+    Switch the completion of your to-do task.
+    """
     todoer = _get_todoer()
     todo, error = todoer.set_complete(todo_id)
 
@@ -124,7 +146,7 @@ def set_complete(todo_id: int = typer.Argument(...)) -> None:
 
 @app.command()
 def remove(
-    todo_id: int = typer.Argument(...),
+    todo_id: int = typer.Argument(..., help="The id of your to-do task."),
     force: bool = typer.Option(
         False,
         "--force",
@@ -132,6 +154,11 @@ def remove(
         help="Force the deletion of task without confirming.",
     ),
 ) -> None:
+    """
+    Deletes the to-do task.
+
+    If --force is not used, will ask for confirmation.
+    """
     todoer = _get_todoer()
 
     def _remove():
@@ -170,6 +197,11 @@ def remove_all(
         help="Force the deletion of tasks without confirming.",
     ),
 ) -> None:
+    """
+    This command will empty your to-do list.
+
+    If --force is not used, will ask for confirmation.
+    """
     todoer = _get_todoer()
 
     if force:
