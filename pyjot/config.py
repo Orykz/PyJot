@@ -10,6 +10,14 @@ CONFIG_FILE_PATH = CONFIG_DIR_PATH / "config.ini"
 
 
 def init_app(db_path: str) -> int:
+    """Initialize the config and database.
+
+    Args:
+        db_path (str): String representation of the database path.
+
+    Returns:
+        int: error code.
+    """
     config_code = _init_config_file()
     if config_code:
         return config_code
