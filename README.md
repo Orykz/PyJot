@@ -23,11 +23,10 @@ You can check out other commands using `pyjot --help` command.
 If you have python(version>=3.12) already installed in your system,  
 you can use either of the commands in your terminal:
 ```
-# for ssh
-pip install git+ssh://git@github.com:Orykz/PyJot.git
-
-# for https
 pip install git+https://github.com/Orykz/PyJot.git
+
+# or version specific
+pip install git+https://github.com/Orykz/PyJot.git@v0.1.0
 ```
 
 **`NOTE: This project is not installed in PyPI (yet)`**
